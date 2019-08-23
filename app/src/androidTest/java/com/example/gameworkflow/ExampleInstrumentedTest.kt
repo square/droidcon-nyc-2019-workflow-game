@@ -1,4 +1,4 @@
-package com.example.helloworkflow
+package com.example.gameworkflow
 
 import androidx.test.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4

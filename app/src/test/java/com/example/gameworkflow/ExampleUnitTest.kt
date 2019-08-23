@@ -1,4 +1,4 @@
-package com.example.helloworkflow
+package com.example.gameworkflow
 
 import org.junit.Test
 
