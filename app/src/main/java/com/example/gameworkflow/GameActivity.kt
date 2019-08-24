@@ -13,7 +13,7 @@ private val gameWorkflow = RealGameWorkflow()
 private val appWorkflow = AppWorkflow(gameLoader, gameWorkflow)
 
 @UseExperimental(ExperimentalWorkflowUi::class)
-private val viewRegistry = ViewRegistry(LoadingScreen, GameLayoutRunner)
+private val viewRegistry = ViewRegistry(LoadingScreen, GameLayoutRunner, TimeTravelLayoutRunner)
 
 @UseExperimental(ExperimentalWorkflowUi::class)
 class GameActivity : AppCompatActivity() {
@@ -21,7 +21,10 @@ class GameActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentWorkflow(savedInstanceState) {
-            WorkflowRunner.Config(appWorkflow, viewRegistry)
+            val shakeWorker = ShakeWorker(application)
+            val timeMachineWorkflow = TimeMachineWorkflow(appWorkflow, shakeWorker)
+
+            WorkflowRunner.Config(timeMachineWorkflow, viewRegistry)
         }
     }
 }

@@ -1,4 +1,7 @@
 <resources>
-  <string name="app_name">Workflow Game</string>
+    <string name="app_name">Workflow Game</string>
     <string name="loading">Loading game…</string>
+    <string name="time_travel_start">Start</string>
+    <string name="time_travel_resume">Resume</string>
+    <string name="time_travel_title">Timey Wimey Mode</string>
 </resources>
