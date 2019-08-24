@@ -1,3 +1,4 @@
 <resources>
   <string name="app_name">Workflow Game</string>
+    <string name="loading">Loading game…</string>
 </resources>
