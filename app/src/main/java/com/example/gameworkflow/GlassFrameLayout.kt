@@ -6,10 +6,12 @@ import android.view.MotionEvent
 import android.widget.FrameLayout
 
 /**
- * [FrameLayout] that blocks all touch events.
+ * [FrameLayout] that can block all touch events.
  */
 class GlassFrameLayout(context: Context, attributeSet: AttributeSet) :
     FrameLayout(context, attributeSet) {
 
-    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean = true
+    var blockTouchEvents: Boolean = false
+
+    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean = blockTouchEvents
 }
