@@ -2,7 +2,7 @@ package com.example.gameworkflow
 
 import com.squareup.workflow.Workflow
 
-typealias GameWorkflow = Workflow<GameProps, GameEnded, GameRendering>
+typealias GameWorkflow = Workflow<GameProps, GameEnded, GameScreen>
 
 data class GameProps(
     val boardSize: Point,
@@ -12,7 +12,7 @@ data class GameProps(
 
 object GameEnded
 
-data class GameRendering(
+data class GameScreen(
     val boardSize: Point,
     val playerPosition: Point,
     val goalPosition: Point,

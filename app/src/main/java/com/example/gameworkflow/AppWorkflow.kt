@@ -4,12 +4,11 @@ import com.example.gameworkflow.AppWorkflow.State
 import com.example.gameworkflow.AppWorkflow.State.*
 import com.squareup.workflow.*
 import com.squareup.workflow.WorkflowAction.Companion.noAction
-import com.squareup.workflow.WorkflowAction.Mutator
 import com.squareup.workflow.ui.AlertContainerScreen
 import com.squareup.workflow.ui.AlertScreen
 import com.squareup.workflow.ui.AlertScreen.Button.POSITIVE
 
-class AppWorkflow(
+class AppWorkflow internal constructor(
     private val gameLoader: Worker<GameProps>,
     private val gameWorkflow: GameWorkflow
 ) : StatefulWorkflow<Unit, State, Nothing, Any>() {
@@ -31,7 +30,7 @@ class AppWorkflow(
                 return LoadingScreen
             }
             is PlayingGame -> {
-                return context.renderChild(gameWorkflow, state.game) { FinishGame }
+                return context.renderChild(gameWorkflow, state.game) { finishGame }
             }
             is GameOver -> {
                 val gameRendering = context.renderChild(gameWorkflow, state.game) {
@@ -39,12 +38,12 @@ class AppWorkflow(
                     noAction()
                 }
 
-                val restartSink = context.makeActionSink<RestartGame>()
+                val sink = context.makeActionSink<WorkflowAction<State, Nothing>>()
                 val gameOverDialog = AlertScreen(
                     buttons = mapOf(POSITIVE to "Restart"),
                     message = "You won!",
                     cancelable = false,
-                    onEvent = { restartSink.send(RestartGame) }
+                    onEvent = { sink.send(restartGame) }
                 )
 
                 return AlertContainerScreen(gameRendering, gameOverDialog)
@@ -59,18 +58,14 @@ class AppWorkflow(
         return@WorkflowAction null
     }
 
-    private object FinishGame : WorkflowAction<State, Nothing> {
-        override fun Mutator<State>.apply(): Nothing? {
-            val playingGame = state as? PlayingGame ?: error("Can only finish game while playing.")
-            state = GameOver(playingGame.game)
-            return null
-        }
+    private val finishGame = WorkflowAction<State, Nothing> {
+        val playingGame = state as? PlayingGame ?: error("Can only finish game while playing.")
+        state = GameOver(playingGame.game)
+        return@WorkflowAction null
     }
 
-    private object RestartGame : WorkflowAction<State, Nothing> {
-        override fun Mutator<State>.apply(): Nothing? {
-            state = LoadingGame
-            return null
-        }
+    private val restartGame = WorkflowAction<State, Nothing> {
+        state = LoadingGame
+        return@WorkflowAction null
     }
 }

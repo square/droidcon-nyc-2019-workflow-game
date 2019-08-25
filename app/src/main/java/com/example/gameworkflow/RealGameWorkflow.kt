@@ -4,7 +4,7 @@ import com.example.gameworkflow.RealGameWorkflow.State
 import com.squareup.workflow.*
 
 class RealGameWorkflow : GameWorkflow,
-    StatefulWorkflow<GameProps, State, GameEnded, GameRendering>() {
+    StatefulWorkflow<GameProps, State, GameEnded, GameScreen>() {
 
     data class State(
         val playerPosition: Point,
@@ -35,15 +35,15 @@ class RealGameWorkflow : GameWorkflow,
         props: GameProps,
         state: State,
         context: RenderContext<State, GameEnded>
-    ): GameRendering {
+    ): GameScreen {
         val sink: Sink<WorkflowAction<State, GameEnded>> = context.makeActionSink()
-        val doMove = { direction: Direction -> sink.send(doMove(props, direction)) }
+        val onMove = { direction: Direction -> sink.send(doMove(props, direction)) }
 
-        return GameRendering(
+        return GameScreen(
             boardSize = props.boardSize,
             playerPosition = state.playerPosition,
             goalPosition = props.goalPosition,
-            onMove = if (state.gameOver) null else doMove
+            onMove = if (state.gameOver) null else onMove
         )
     }
 
