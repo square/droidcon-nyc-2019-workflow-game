@@ -5,19 +5,23 @@ import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.widget.SeekBar
+import androidx.constraintlayout.widget.Group
+import androidx.transition.TransitionManager
 import com.example.gameworkflow.TimeMachineWorkflow.TimeTravelScreen
 import com.squareup.workflow.ui.*
 import com.squareup.workflow.ui.LayoutRunner.Companion.bind
 
 @UseExperimental(ExperimentalWorkflowUi::class)
 class TimeTravelLayoutRunner(
-    view: View,
+    private val view: View,
     private val viewRegistry: ViewRegistry
 ) : LayoutRunner<TimeTravelScreen> {
 
-    private val childContainer = view.findViewById<ViewGroup>(R.id.child_container)!!
+    private val childContainer = view.findViewById<GlassFrameLayout>(R.id.child_container)!!
     private val seek = view.findViewById<SeekBar>(R.id.time_travel_seek)!!
+    private val group = view.findViewById<Group>(R.id.group)!!
     private var currentChildView: View? = null
+    private var wasLive: Boolean? = null
 
     override fun showRendering(rendering: TimeTravelScreen) {
         seek.max = rendering.historyEnd
@@ -37,6 +41,15 @@ class TimeTravelLayoutRunner(
                 // Don't care.
             }
         })
+
+        if (wasLive != rendering.live) {
+            wasLive = rendering.live
+
+            val visibility = if (rendering.live) View.GONE else View.VISIBLE
+            TransitionManager.beginDelayedTransition(view as ViewGroup)
+            group.visibility = visibility
+            childContainer.blockTouchEvents = !rendering.live
+        }
 
         // Show the child screen.
         currentChildView = currentChildView

@@ -31,7 +31,7 @@
 
     <SeekBar
         android:id="@+id/time_travel_seek"
-        style="@style/Widget.AppCompat.SeekBar.Discrete"
+        style="@style/Widget.AppCompat.SeekBar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/default_gap"
@@ -66,5 +66,13 @@
         app:constraint_referenced_ids="start_label,resume_label"
         tools:layout_editor_absoluteX="8dp"
         tools:layout_editor_absoluteY="650dp" />
+
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/group"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:constraint_referenced_ids="title,resume_label,start_label,time_travel_seek"
+        tools:layout_editor_absoluteX="8dp"
+        tools:layout_editor_absoluteY="8dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

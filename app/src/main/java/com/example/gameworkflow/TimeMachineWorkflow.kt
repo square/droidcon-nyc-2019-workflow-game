@@ -12,18 +12,18 @@ class TimeMachineWorkflow(
 ) : StatefulWorkflow<Unit, State, Nothing, Any>() {
 
     /**
-     * @param replayIndex The index into [history] that is currently being "replayed", or [PRESENT]
+     * @param replayIndex The index into [history] that is currently being "replayed", or [LIVE]
      * if we're just showing [child] live.
      *
      * @param history List of all the renderings that [child] has emitted while the child is being
-     * shown live ([replayIndex] is [PRESENT]). When the child is not live, it is still rendered to
+     * shown live ([replayIndex] is [LIVE]). When the child is not live, it is still rendered to
      * keep its internal state, but its renderings are not added to the list.
      *
      * **This list is mutable –** workflow states should generally not be mutable, nor have any
      * mutable properties.
      */
     data class State(
-        val replayIndex: Int = PRESENT,
+        val replayIndex: Int = LIVE,
         val history: MutableList<Any> = mutableListOf()
     )
 
@@ -39,6 +39,7 @@ class TimeMachineWorkflow(
         val screen: Any,
         val historyEnd: Int,
         val historyPosition: Int,
+        val live: Boolean,
         val onSeek: (position: Int) -> Unit
     )
 
@@ -55,7 +56,7 @@ class TimeMachineWorkflow(
      */
     private fun onSeek(position: Int) = WorkflowAction<State, Nothing> {
         val replayPoint = if (position >= state.history.size - 1) {
-            PRESENT
+            LIVE
         } else {
             position.coerceAtLeast(0)
         }
@@ -68,23 +69,25 @@ class TimeMachineWorkflow(
     override fun render(props: Unit, state: State, context: RenderContext<State, Nothing>): Any {
         // Keep the child alive even when replaying to preserve its internal state.
         val currentChildRendering = context.renderChild(child)
+        val seekSink = context.makeActionSink<WorkflowAction<State, Nothing>>()
+        val live = state.replayIndex == LIVE
 
-        return if (state.replayIndex == PRESENT) {
+        if (live) {
             // Shaking enters time travel mode.
             context.runningWorker(shakeWorker) { onShake }
 
             // Only record renderings when we're actually displaying them live.
             state.history += currentChildRendering
-            currentChildRendering
-        } else {
-            val seekSink = context.makeActionSink<WorkflowAction<State, Nothing>>()
-            TimeTravelScreen(
-                screen = state.history[state.replayIndex],
-                historyEnd = state.history.size - 1,
-                historyPosition = state.replayIndex,
-                onSeek = { position -> seekSink.send(onSeek(position)) }
-            )
         }
+
+        val historyEnd = state.history.size - 1
+        return TimeTravelScreen(
+            screen = if (live) currentChildRendering else state.history[state.replayIndex],
+            historyEnd = historyEnd,
+            historyPosition = if (live) historyEnd else state.replayIndex,
+            live = live,
+            onSeek = { position -> seekSink.send(onSeek(position)) }
+        )
     }
 
     override fun snapshotState(state: State): Snapshot = Snapshot.EMPTY
@@ -94,6 +97,6 @@ class TimeMachineWorkflow(
          * Index for [State.replayIndex] that indicates we're running the child workflow and
          * recording history, not replaying it.
          */
-        private const val PRESENT = -1
+        private const val LIVE = -1
     }
 }
