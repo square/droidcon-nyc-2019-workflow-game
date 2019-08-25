@@ -9,9 +9,11 @@ import com.squareup.workflow.ui.AlertScreen
 import com.squareup.workflow.ui.AlertScreen.Button.POSITIVE
 
 class AppWorkflow internal constructor(
-    private val gameLoader: Worker<GameProps>,
+    gameLoaderService: GameLoader,
     private val gameWorkflow: GameWorkflow
 ) : StatefulWorkflow<Unit, State, Nothing, Any>() {
+
+    private val gameLoader = gameLoaderService.loadGame().asWorker()
 
     sealed class State {
         object LoadingGame : State()
