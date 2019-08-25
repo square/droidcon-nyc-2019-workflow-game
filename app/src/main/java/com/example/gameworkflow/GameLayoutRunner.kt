@@ -14,7 +14,7 @@ private const val BOX_BOTTOM_LEFT = '└'
 private const val BOX_BOTTOM_RIGHT = '┘'
 
 @UseExperimental(ExperimentalWorkflowUi::class)
-class GameLayoutRunner(view: View) : LayoutRunner<GameRendering> {
+class GameLayoutRunner(view: View) : LayoutRunner<GameScreen> {
 
     private val boardView = view.findViewById<TextView>(R.id.board_view)
     private val upButton = view.findViewById<View>(R.id.up_button)
@@ -22,7 +22,7 @@ class GameLayoutRunner(view: View) : LayoutRunner<GameRendering> {
     private val downButton = view.findViewById<View>(R.id.down_button)
     private val leftButton = view.findViewById<View>(R.id.left_button)
 
-    override fun showRendering(rendering: GameRendering) {
+    override fun showRendering(rendering: GameScreen) {
         showBoard(rendering)
 
         val onMove = rendering.onMove
@@ -38,7 +38,7 @@ class GameLayoutRunner(view: View) : LayoutRunner<GameRendering> {
         }
     }
 
-    private fun showBoard(rendering: GameRendering) {
+    private fun showBoard(rendering: GameScreen) {
         val text = buildString {
             // Top border.
             append(BOX_TOP_LEFT)
@@ -62,7 +62,7 @@ class GameLayoutRunner(view: View) : LayoutRunner<GameRendering> {
         boardView.text = text
     }
 
-    private operator fun GameRendering.get(x: Int, y: Int) =
+    private operator fun GameScreen.get(x: Int, y: Int) =
         when (Point(x, y)) {
             playerPosition -> "👩"
             goalPosition -> "🍒"
@@ -70,7 +70,7 @@ class GameLayoutRunner(view: View) : LayoutRunner<GameRendering> {
             else -> "  "
         }
 
-    companion object : ViewBinding<GameRendering> by bind(
+    companion object : ViewBinding<GameScreen> by bind(
         R.layout.game_layout, ::GameLayoutRunner
     )
 }
