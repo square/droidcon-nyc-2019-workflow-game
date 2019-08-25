@@ -13,21 +13,15 @@ private val gameWorkflow = RealGameWorkflow()
 private val appWorkflow = AppWorkflow(gameLoader, gameWorkflow)
 
 @UseExperimental(ExperimentalWorkflowUi::class)
+private val viewRegistry = ViewRegistry(LoadingScreen, GameLayoutRunner)
+
+@UseExperimental(ExperimentalWorkflowUi::class)
 class GameActivity : AppCompatActivity() {
-
-    private val viewRegistry = ViewRegistry(LoadingScreen, GameLayoutRunner)
-    private lateinit var runner: WorkflowRunner<*>
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        runner = setContentWorkflow(savedInstanceState) {
+        setContentWorkflow(savedInstanceState) {
             WorkflowRunner.Config(appWorkflow, viewRegistry)
         }
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        runner.onSaveInstanceState(outState)
     }
 }

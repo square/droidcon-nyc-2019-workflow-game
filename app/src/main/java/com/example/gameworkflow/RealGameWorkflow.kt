@@ -1,40 +1,49 @@
 package com.example.gameworkflow
 
-import com.example.gameworkflow.GameOutput.Win
 import com.example.gameworkflow.RealGameWorkflow.State
-import com.squareup.workflow.RenderContext
-import com.squareup.workflow.Snapshot
-import com.squareup.workflow.StatefulWorkflow
-import com.squareup.workflow.makeEventSink
+import com.squareup.workflow.*
 
 class RealGameWorkflow : GameWorkflow,
-    StatefulWorkflow<GameProps, State, GameOutput, GameRendering>() {
+    StatefulWorkflow<GameProps, State, GameEnded, GameRendering>() {
 
-    data class State(val playerPosition: Point)
+    data class State(
+        val playerPosition: Point,
+        val gameOver: Boolean
+    )
 
     override fun initialState(props: GameProps, snapshot: Snapshot?): State =
-        State(props.spawnPosition)
+        State(playerPosition = props.spawnPosition, gameOver = false)
+
+    private fun doMove(
+        props: GameProps,
+        direction: Direction
+    ) = WorkflowAction<State, GameEnded> {
+        val newPosition = state.playerPosition.moved(
+            direction = direction,
+            bounds = props.boardSize
+        )
+        state = state.copy(
+            playerPosition = newPosition,
+            gameOver = newPosition == props.goalPosition
+        )
+
+        // Value returned from a WorkflowAction is emitted as workflow output.
+        return@WorkflowAction if (state.gameOver) GameEnded else null
+    }
 
     override fun render(
         props: GameProps,
         state: State,
-        context: RenderContext<State, GameOutput>
+        context: RenderContext<State, GameEnded>
     ): GameRendering {
-        fun isGameOver(playerPosition: Point) = playerPosition == props.goalPosition
-
-        val moveSink = context.makeEventSink { direction: Direction ->
-            val newPosition = state.playerPosition.moved(direction)
-                .constrainTo(props.boardSize)
-            this.state = state.copy(playerPosition = newPosition)
-
-            return@makeEventSink if (isGameOver(newPosition)) Win else null
-        }
+        val sink: Sink<WorkflowAction<State, GameEnded>> = context.makeActionSink()
+        val doMove = { direction: Direction -> sink.send(doMove(props, direction)) }
 
         return GameRendering(
             boardSize = props.boardSize,
             playerPosition = state.playerPosition,
             goalPosition = props.goalPosition,
-            onMove = if (!isGameOver(state.playerPosition)) moveSink::send else null
+            onMove = if (state.gameOver) null else doMove
         )
     }
 
