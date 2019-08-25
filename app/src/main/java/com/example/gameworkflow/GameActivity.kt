@@ -8,7 +8,7 @@ import com.squareup.workflow.ui.WorkflowRunner
 import com.squareup.workflow.ui.setContentWorkflow
 
 // These would typically be provided by your dependency-injection library.
-private val gameLoader = GameLoader()
+private val gameLoader = RealGameLoader()
 private val gameWorkflow = RealGameWorkflow()
 private val appWorkflow = AppWorkflow(gameLoader, gameWorkflow)
 
