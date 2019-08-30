@@ -14,8 +14,13 @@ import org.junit.Test
 
 class AppWorkflowTest {
 
-    private val gameWorkflow: GameWorkflow = MockChildWorkflow {
-        GameScreen(it.boardSize, it.spawnPosition, it.goalPosition, onMove = { error("stub") })
+    private val gameWorkflow: GameWorkflow = MockChildWorkflow { props ->
+        GameScreen(
+            props.boardSize,
+            props.spawnPosition,
+            props.goalPosition,
+            onMove = { error("stub") }
+        )
     }
     private val loader: GameLoader = object : GameLoader {
         // This doesn't need to actually emit, we just need something to pass into the AppWorkflow
@@ -38,6 +43,8 @@ class AppWorkflowTest {
             assertThat(rendering).isEqualTo(LoadingScreen)
             assertNoWorkflowsRendered()
             gameWorker.assertRan()
+            val (state, _) = gameWorker.handleOutput(gameProps)
+            assertThat(state).isEqualTo(PlayingGame(gameProps))
         }
     }
 
