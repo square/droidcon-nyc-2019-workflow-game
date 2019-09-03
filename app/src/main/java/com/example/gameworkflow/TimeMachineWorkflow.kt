@@ -1,5 +1,8 @@
 package com.example.gameworkflow
 
+import com.example.gameworkflow.RecordingWorkflow.Props
+import com.example.gameworkflow.RecordingWorkflow.Props.Pause
+import com.example.gameworkflow.RecordingWorkflow.Props.Record
 import com.example.gameworkflow.TimeMachineWorkflow.State
 import com.squareup.workflow.*
 
@@ -12,20 +15,10 @@ class TimeMachineWorkflow(
 ) : StatefulWorkflow<Unit, State, Nothing, Any>() {
 
     /**
-     * @param replayIndex The index into [history] that is currently being "replayed", or [LIVE]
+     * @param replayIndex The index into the history that is currently being "replayed", or [LIVE]
      * if we're just showing [child] live.
-     *
-     * @param history List of all the renderings that [child] has emitted while the child is being
-     * shown live ([replayIndex] is [LIVE]). When the child is not live, it is still rendered to
-     * keep its internal state, but its renderings are not added to the list.
-     *
-     * **This list is mutable –** workflow states should generally not be mutable, nor have any
-     * mutable properties.
      */
-    data class State(
-        val replayIndex: Int = LIVE,
-        val history: MutableList<Any> = mutableListOf()
-    )
+    data class State(val replayIndex: Int = LIVE)
 
     /**
      * A screen that shows a previous rendering of the child, with a seek bar for scrubbing time.
@@ -46,16 +39,16 @@ class TimeMachineWorkflow(
     /**
      * [WorkflowAction] to perform when the device is shaken (see [ShakeWorker]).
      */
-    private val onShake = WorkflowAction<State, Nothing> {
-        state = state.copy(replayIndex = state.history.size - 1)
+    private fun onShake(replayIndex: Int) = WorkflowAction<State, Nothing> {
+        state = state.copy(replayIndex = replayIndex)
         return@WorkflowAction null
     }
 
     /**
      * [WorkflowAction] to perform when the user drags the history seekbar.
      */
-    private fun onSeek(position: Int) = WorkflowAction<State, Nothing> {
-        val replayPoint = if (position >= state.history.size - 1) {
+    private fun onSeek(position: Int, historySize: Int) = WorkflowAction<State, Nothing> {
+        val replayPoint = if (position >= historySize - 1) {
             LIVE
         } else {
             position.coerceAtLeast(0)
@@ -72,21 +65,22 @@ class TimeMachineWorkflow(
         val seekSink = context.makeActionSink<WorkflowAction<State, Nothing>>()
         val live = state.replayIndex == LIVE
 
+        // Only record renderings when we're actually displaying them live.
+        val recordControl = if (live) Record(currentChildRendering) else Pause
+        val history = context.renderChild(RecordingWorkflow(), recordControl)
+
         if (live) {
             // Shaking enters time travel mode.
-            context.runningWorker(shakeWorker) { onShake }
-
-            // Only record renderings when we're actually displaying them live.
-            state.history += currentChildRendering
+            context.runningWorker(shakeWorker) { onShake(history.size - 1) }
         }
 
-        val historyEnd = state.history.size - 1
+        val historyEnd = history.size - 1
         return TimeTravelScreen(
-            screen = if (live) currentChildRendering else state.history[state.replayIndex],
+            screen = if (live) currentChildRendering else history[state.replayIndex],
             historyEnd = historyEnd,
             historyPosition = if (live) historyEnd else state.replayIndex,
             live = live,
-            onSeek = { position -> seekSink.send(onSeek(position)) }
+            onSeek = { position -> seekSink.send(onSeek(position, history.size)) }
         )
     }
 
@@ -99,4 +93,34 @@ class TimeMachineWorkflow(
          */
         private const val LIVE = -1
     }
+}
+
+/**
+ * A workflow that records every props ever sent to it in a list, and returns that list as its
+ * rendering.
+ */
+private class RecordingWorkflow<RenderingT> :
+    StatefulWorkflow<Props<RenderingT>, List<RenderingT>, Nothing, List<RenderingT>>() {
+
+    sealed class Props<out RenderingT> {
+        data class Record<RenderingT>(val rendering: RenderingT) : Props<RenderingT>()
+        object Pause : Props<Nothing>()
+    }
+
+    override fun initialState(props: Props<RenderingT>, snapshot: Snapshot?): List<RenderingT> =
+        emptyList()
+
+    override fun onPropsChanged(
+        old: Props<RenderingT>,
+        new: Props<RenderingT>,
+        state: List<RenderingT>
+    ): List<RenderingT> = if (new is Record) state + new.rendering else state
+
+    override fun render(
+        props: Props<RenderingT>,
+        state: List<RenderingT>,
+        context: RenderContext<List<RenderingT>, Nothing>
+    ): List<RenderingT> = state
+
+    override fun snapshotState(state: List<RenderingT>): Snapshot = Snapshot.EMPTY
 }
