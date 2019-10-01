@@ -11,7 +11,7 @@ import com.squareup.workflow.ui.AlertScreen.Button.POSITIVE
 class AppWorkflow internal constructor(
     gameLoaderService: GameLoader,
     private val gameWorkflow: GameWorkflow
-) : StatefulWorkflow<Unit, State, Nothing, Any>() {
+) : StatefulWorkflow<Unit, State, Nothing, AlertContainerScreen<Any>>() {
 
     private val gameLoader = gameLoaderService.loadGame().asWorker()
 
@@ -25,14 +25,19 @@ class AppWorkflow internal constructor(
         return LoadingGame
     }
 
-    override fun render(props: Unit, state: State, context: RenderContext<State, Nothing>): Any {
+    override fun render(
+        props: Unit,
+        state: State,
+        context: RenderContext<State, Nothing>
+    ): AlertContainerScreen<Any> {
         when (state) {
             LoadingGame -> {
                 context.runningWorker(gameLoader) { startGame(it) }
-                return LoadingScreen
+                return AlertContainerScreen(LoadingScreen)
             }
             is PlayingGame -> {
-                return context.renderChild(gameWorkflow, state.game) { finishGame }
+                val bodyScreen = context.renderChild(gameWorkflow, state.game) { finishGame }
+                return AlertContainerScreen(bodyScreen)
             }
             is GameOver -> {
                 val gameRendering = context.renderChild(gameWorkflow, state.game) {
